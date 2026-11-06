@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   Code2,
   Folder,
@@ -12,65 +14,109 @@ import {
   Eye,
   PanelLeft,
   Check,
+  Palette,
 } from "lucide-react";
 
+const themes = [
+  { id: "midnight", name: "Midnight Dark", color: "#0c0e12" },
+  { id: "github", name: "GitHub Dark", color: "#0d1117" },
+  { id: "light", name: "Light Pro", color: "#f5f6f8" },
+  { id: "purple", name: "Midnight Purple", color: "#110e1b" },
+];
+
 function App() {
+  const [theme, setTheme] = useState("midnight");
+  const [showThemes, setShowThemes] = useState(false);
+
   return (
-    <div className="min-h-screen bg-[#0c0e12] text-[#e5e7eb] flex flex-col">
+    <div className={`app theme-${theme}`}>
       {/* Header */}
-      <header className="h-14 border-b border-[#22252c] flex items-center justify-between px-5 shrink-0">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2.5">
-            <Code2 size={21} className="text-white" />
-            <span className="text-[17px] font-semibold tracking-tight">
-              CodeSpace
-            </span>
+      <header className="header">
+        <div className="header-left">
+          <div className="brand">
+            <Code2 size={21} />
+            <span>CodeSpace</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-sm text-gray-400">
+          <div className="breadcrumb">
             <span>My Projects</span>
-            <span className="text-gray-600">/</span>
-            <span className="text-gray-200">Untitled Project</span>
+            <span>/</span>
+            <strong>Untitled Project</strong>
             <ChevronDown size={14} />
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="header-right">
+          <span className="saved-status">
             <Check size={13} />
             All changes saved
-          </div>
+          </span>
 
-          <button className="p-2 text-gray-400 hover:text-white transition">
+          <button className="icon-button">
             <Download size={17} />
           </button>
 
-          <button className="flex items-center gap-2 bg-white text-black px-3.5 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 transition">
+          {/* Theme Switcher */}
+          <div className="theme-selector">
+            <button
+              className="icon-button theme-trigger"
+              onClick={() => setShowThemes(!showThemes)}
+              title="Change theme"
+            >
+              <Palette size={17} />
+            </button>
+
+            {showThemes && (
+              <div className="theme-dropdown">
+                <p className="dropdown-heading">Choose Theme</p>
+
+                {themes.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`theme-option ${
+                      theme === item.id ? "selected" : ""
+                    }`}
+                    onClick={() => {
+                      setTheme(item.id);
+                      setShowThemes(false);
+                    }}
+                  >
+                    <span
+                      className="theme-dot"
+                      style={{ background: item.color }}
+                    />
+
+                    {item.name}
+
+                    {theme === item.id && <Check size={15} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button className="run-button">
             <Play size={14} fill="currentColor" />
             Run
           </button>
 
-          <div className="w-7 h-7 rounded-full bg-[#292d36] flex items-center justify-center text-xs font-medium">
-            OM
-          </div>
+          <div className="avatar">OM</div>
         </div>
       </header>
 
       {/* Main Layout */}
-      <div className="flex flex-1 min-h-0">
+      <div className="main-layout">
         {/* Sidebar */}
-        <aside className="hidden md:flex w-[230px] border-r border-[#22252c] flex-col shrink-0">
-          <div className="p-4">
-            <button className="w-full flex items-center justify-center gap-2 bg-[#191c23] border border-[#30343d] hover:bg-[#222630] rounded-md py-2 text-sm transition">
+        <aside className="sidebar">
+          <div className="sidebar-top">
+            <button className="new-project">
               <Plus size={15} />
               New Project
             </button>
           </div>
 
-          <div className="px-3">
-            <p className="px-2 mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              Workspace
-            </p>
+          <div className="sidebar-section">
+            <p className="section-heading">WORKSPACE</p>
 
             <button className="sidebar-item active">
               <Folder size={16} />
@@ -83,15 +129,10 @@ function App() {
             </button>
           </div>
 
-          <div className="mt-8 px-3">
-            <div className="flex items-center justify-between px-2 mb-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                Recent Projects
-              </p>
-
-              <button className="text-gray-500 hover:text-white">
-                <Plus size={15} />
-              </button>
+          <div className="sidebar-section recent-section">
+            <div className="section-title">
+              <p className="section-heading">RECENT PROJECTS</p>
+              <Plus size={15} />
             </div>
 
             <button className="sidebar-item">
@@ -110,7 +151,7 @@ function App() {
             </button>
           </div>
 
-          <div className="mt-auto p-3 border-t border-[#22252c]">
+          <div className="sidebar-bottom">
             <button className="sidebar-item">
               <Settings size={16} />
               Settings
@@ -119,166 +160,141 @@ function App() {
         </aside>
 
         {/* Workspace */}
-        <main className="flex-1 min-w-0 flex flex-col">
-          {/* Workspace Toolbar */}
-          <div className="h-12 border-b border-[#22252c] flex items-center justify-between px-4 shrink-0">
-            <div className="flex items-center gap-3">
-              <button className="text-gray-500 hover:text-white">
-                <PanelLeft size={17} />
-              </button>
-
-              <span className="text-sm font-medium">Untitled Project</span>
-
-              <span className="text-[11px] bg-[#191c23] border border-[#30343d] px-2 py-0.5 rounded text-gray-400">
-                React
-              </span>
+        <main className="workspace">
+          {/* Toolbar */}
+          <div className="workspace-toolbar">
+            <div className="workspace-title">
+              <PanelLeft size={17} />
+              <strong>Untitled Project</strong>
+              <span className="framework-badge">React</span>
             </div>
 
-            <button className="text-gray-500 hover:text-white">
+            <button className="icon-button">
               <MoreHorizontal size={18} />
             </button>
           </div>
 
-          {/* Editor and Preview */}
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-px bg-[#22252c]">
-            {/* Editor Panel */}
-            <section className="flex-1 min-w-0 min-h-[400px] bg-[#0c0e12] flex flex-col">
-              {/* Editor Header */}
-              <div className="h-11 border-b border-[#22252c] flex items-center justify-between px-4 shrink-0">
-                <div className="flex items-center gap-2 text-sm">
-                  <FileCode2 size={15} className="text-gray-400" />
+          {/* Editor + Preview */}
+          <div className="workspace-content">
+            {/* Editor */}
+            <section className="panel editor-panel">
+              <div className="panel-header">
+                <div className="file-tab">
+                  <FileCode2 size={15} />
                   <span>App.jsx</span>
-                  <span className="text-gray-600 text-xs">×</span>
+                  <span className="close-tab">×</span>
                 </div>
 
-                <button className="text-gray-500 hover:text-white">
-                  <MoreHorizontal size={17} />
-                </button>
+                <MoreHorizontal size={17} />
               </div>
 
-              {/* Editor Content */}
-              <div className="flex-1 p-5 overflow-auto">
-                <div className="editor-code">
-                  <div className="code-line">
-                    <span className="line-number">1</span>
-                    <span>
-                      <span className="code-purple">function</span>{" "}
-                      <span className="code-yellow">App</span>() {"{"}
-                    </span>
-                  </div>
+              <div className="editor-content">
+                <div className="code-line">
+                  <span className="line-number">1</span>
+                  <span>
+                    <span className="code-purple">function</span>{" "}
+                    <span className="code-yellow">App</span>() {"{"}
+                  </span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">2</span>
-                    <span className="pl-5">
-                      <span className="code-purple">return</span> (
-                    </span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">2</span>
+                  <span className="indent-1">
+                    <span className="code-purple">return</span> (
+                  </span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">3</span>
-                    <span className="pl-10">
-                      {"<"}
-                      <span className="code-red">div</span>
-                      {">"}
-                    </span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">3</span>
+                  <span className="indent-2">
+                    {"<"}
+                    <span className="code-red">div</span>
+                    {">"}
+                  </span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">4</span>
-                    <span className="pl-14">
-                      {"<"}
-                      <span className="code-red">h1</span>
-                      {">"}
-                      <span className="code-green">Hello, CodeSpace!</span>
-                      {"</"}
-                      <span className="code-red">h1</span>
-                      {">"}
-                    </span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">4</span>
+                  <span className="indent-3">
+                    {"<"}
+                    <span className="code-red">h1</span>
+                    {">"}
+                    <span className="code-green">Hello, CodeSpace!</span>
+                    {"</"}
+                    <span className="code-red">h1</span>
+                    {">"}
+                  </span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">5</span>
-                    <span className="pl-10">
-                      {"</"}
-                      <span className="code-red">div</span>
-                      {">"}
-                    </span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">5</span>
+                  <span className="indent-2">
+                    {"</"}
+                    <span className="code-red">div</span>
+                    {">"}
+                  </span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">6</span>
-                    <span className="pl-5">);</span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">6</span>
+                  <span className="indent-1">);</span>
+                </div>
 
-                  <div className="code-line">
-                    <span className="line-number">7</span>
-                    <span>{"}"}</span>
-                  </div>
+                <div className="code-line">
+                  <span className="line-number">7</span>
+                  <span>{"}"}</span>
+                </div>
 
-                  <div className="code-line mt-4">
-                    <span className="line-number">8</span>
-                    <span>
-                      <span className="code-purple">export default</span>{" "}
-                      <span className="code-yellow">App</span>;
-                    </span>
-                  </div>
+                <div className="code-line code-last">
+                  <span className="line-number">8</span>
+                  <span>
+                    <span className="code-purple">export default</span>{" "}
+                    <span className="code-yellow">App</span>;
+                  </span>
                 </div>
               </div>
 
-              {/* Editor Footer */}
-              <div className="h-8 border-t border-[#22252c] flex items-center justify-between px-4 text-[11px] text-gray-500 shrink-0">
-                <div className="flex gap-4">
-                  <span>Ln 1, Col 1</span>
-                  <span>Spaces: 2</span>
-                </div>
-                <span>JavaScript JSX</span>
+              <div className="panel-footer">
+                <span>Ln 1, Col 1</span>
+                <span>Spaces: 2</span>
+                <span className="footer-right">JavaScript JSX</span>
               </div>
             </section>
 
-            {/* Preview Panel */}
-            <section className="flex-1 min-w-0 min-h-[400px] bg-[#0c0e12] flex flex-col">
-              {/* Preview Header */}
-              <div className="h-11 border-b border-[#22252c] flex items-center justify-between px-4 shrink-0">
-                <div className="flex items-center gap-2 text-sm">
-                  <Eye size={15} className="text-gray-400" />
+            {/* Preview */}
+            <section className="panel preview-panel">
+              <div className="panel-header">
+                <div className="preview-title">
+                  <Eye size={15} />
                   <span>Preview</span>
                 </div>
 
-                <div className="flex items-center gap-3 text-gray-500">
-                  <span className="text-xs">localhost:3000</span>
+                <div className="preview-url">
+                  localhost:3000
                   <MoreHorizontal size={17} />
                 </div>
               </div>
 
-              {/* Preview Canvas */}
-              <div className="flex-1 p-4 bg-[#15171d]">
-                <div className="h-full min-h-[300px] bg-white rounded-md flex items-center justify-center">
-                  <div className="text-center">
-                    <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">
-                      Hello, CodeSpace!
-                    </h1>
-
-                    <p className="text-sm text-gray-500 mt-2">
-                      Your preview will appear here.
-                    </p>
+              <div className="preview-content">
+                <div className="preview-canvas">
+                  <div className="preview-message">
+                    <h1>Hello, CodeSpace!</h1>
+                    <p>Your preview will appear here.</p>
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* Bottom Status Bar */}
-          <footer className="h-8 border-t border-[#22252c] px-4 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                Ready
-              </span>
-
-              <span className="hidden sm:inline">CodeSpace Workspace</span>
+          {/* Status Bar */}
+          <footer className="status-bar">
+            <div>
+              <span className="ready-dot" />
+              Ready
+              <span className="status-extra">CodeSpace Workspace</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div>
               <span>UTF-8</span>
               <span>React</span>
             </div>

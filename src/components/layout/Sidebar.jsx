@@ -1,20 +1,21 @@
-import { Folder, Plus, Search, Settings, FileCode2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const sidebarItems = [
-  { label: "My Projects", icon: Folder, active: true },
-  { label: "Explore", icon: Search },
-];
+import { Folder, Plus, Search, Settings, FileCode2 } from "lucide-react";
 
 const recentProjects = ["Portfolio Website", "React Dashboard", "Landing Page"];
 
 function Sidebar() {
   return (
     <aside className="hidden w-57.5 shrink-0 flex-col border-r border-(--border) bg-(--sidebar) md:flex">
+      {/* New Project */}
       <div className="p-4">
-        <button className="flex w-full items-center justify-center gap-2 rounded-md border border-(--border) bg-(--surface) py-2.5 text-xs transition hover:bg-(--hover)">
+        <Link
+          to="/editor"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-(--border) bg-(--surface) py-2.5 text-xs transition hover:bg-(--hover)"
+        >
           <Plus size={16} />
           New Project
-        </button>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -23,23 +24,18 @@ function Sidebar() {
           WORKSPACE
         </p>
 
-        {sidebarItems.map((item) => {
-          const Icon = item.icon;
+        <Link
+          to="/"
+          className="mb-1 flex w-full items-center gap-3 rounded-md bg-(--active) px-3 py-2.5 text-left text-xs text-(--text) transition"
+        >
+          <Folder size={16} />
+          My Projects
+        </Link>
 
-          return (
-            <button
-              key={item.label}
-              className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-xs transition ${
-                item.active
-                  ? "bg-(--active) text-(--text)"
-                  : "text-(--muted) hover:bg-(--hover) hover:text-(--text)"
-              }`}
-            >
-              <Icon size={16} />
-              {item.label}
-            </button>
-          );
-        })}
+        <button className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-xs text-(--muted) transition hover:bg-(--hover) hover:text-(--text)">
+          <Search size={16} />
+          Explore
+        </button>
       </div>
 
       {/* Recent Projects */}

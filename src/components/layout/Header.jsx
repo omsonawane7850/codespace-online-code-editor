@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   Code2,
@@ -17,16 +18,21 @@ function Header({ theme, setTheme }) {
   return (
     <header className="z-10 flex h-14 shrink-0 items-center justify-between border-b border-(--border) bg-(--sidebar) px-5">
       <div className="flex items-center gap-8">
-        <div className="flex items-center gap-2.5">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5">
           <Code2 size={22} />
 
           <span className="text-[17px] font-semibold tracking-tight">
             CodeSpace
           </span>
-        </div>
+        </Link>
 
+        {/* Breadcrumb */}
         <div className="hidden items-center gap-3 text-sm text-(--muted) sm:flex">
-          <span>My Projects</span>
+          <Link to="/" className="transition hover:text-(--text)">
+            My Projects
+          </Link>
+
           <span>/</span>
 
           <span className="font-medium text-(--text)">Untitled Project</span>
@@ -36,11 +42,13 @@ function Header({ theme, setTheme }) {
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
+        {/* Save Status */}
         <div className="hidden items-center gap-1.5 text-xs text-(--muted) md:flex">
           <Check size={14} />
           All changes saved
         </div>
 
+        {/* Download */}
         <button className="rounded-md p-2 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)">
           <Download size={17} />
         </button>
@@ -88,11 +96,13 @@ function Header({ theme, setTheme }) {
           )}
         </div>
 
+        {/* Run */}
         <button className="flex items-center gap-2 rounded-md bg-(--accent) px-3.5 py-2 text-xs font-semibold text-(--accent-text) transition hover:opacity-85">
           <Play size={13} fill="currentColor" />
           Run
         </button>
 
+        {/* Profile */}
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--active) text-xs font-semibold">
           OM
         </div>

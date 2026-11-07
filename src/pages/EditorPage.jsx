@@ -7,6 +7,7 @@ import Sidebar from "../components/layout/Sidebar";
 import StatusBar from "../components/layout/StatusBar";
 import WorkspaceToolbar from "../components/layout/WorkspaceToolbar";
 
+import FileExplorer from "../components/editor/FileExplorer";
 import EditorPanel from "../components/editor/EditorPanel";
 import PreviewPanel from "../components/preview/PreviewPanel";
 
@@ -53,7 +54,10 @@ function EditorPage() {
                 overflow: "auto",
               }}
             >
+              <FileExplorer />
+
               <EditorPanel />
+
               <PreviewPanel />
             </SandpackLayout>
           </SandpackProvider>

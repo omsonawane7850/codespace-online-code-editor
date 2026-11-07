@@ -1,13 +1,17 @@
 import { useState } from "react";
 
+import { SandpackProvider, SandpackLayout } from "@codesandbox/sandpack-react";
+
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
 import StatusBar from "../components/layout/StatusBar";
 import WorkspaceToolbar from "../components/layout/WorkspaceToolbar";
 
-import { themes } from "../data/themes";
 import EditorPanel from "../components/editor/EditorPanel";
 import PreviewPanel from "../components/preview/PreviewPanel";
+
+import initialFiles from "../data/initialFiles";
+import { themes } from "../data/themes";
 
 function EditorPage() {
   const [theme, setTheme] = useState("midnight");
@@ -25,11 +29,34 @@ function EditorPage() {
         <main className="flex min-w-0 flex-1 flex-col">
           <WorkspaceToolbar />
 
-          <div className="flex min-h-0 flex-1 flex-col gap-px overflow-auto bg-(--border) lg:flex-row">
-            <EditorPanel />
-
-            <PreviewPanel />
-          </div>
+          <SandpackProvider
+            template="react"
+            files={initialFiles}
+            theme={theme === "light" ? "light" : "dark"}
+            options={{
+              activeFile: "/App.js",
+              autorun: true,
+              recompileMode: "delayed",
+              recompileDelay: 500,
+            }}
+          >
+            <SandpackLayout
+              style={{
+                display: "flex",
+                flex: 1,
+                minHeight: 0,
+                width: "100%",
+                border: "none",
+                borderRadius: 0,
+                gap: "1px",
+                background: "var(--border)",
+                overflow: "auto",
+              }}
+            >
+              <EditorPanel />
+              <PreviewPanel />
+            </SandpackLayout>
+          </SandpackProvider>
 
           <StatusBar />
         </main>

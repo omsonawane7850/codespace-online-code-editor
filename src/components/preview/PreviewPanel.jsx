@@ -1,3 +1,5 @@
+import { SandpackPreview } from "@codesandbox/sandpack-react";
+
 import { Eye, MoreHorizontal } from "lucide-react";
 
 function PreviewPanel() {
@@ -16,18 +18,18 @@ function PreviewPanel() {
         </div>
       </div>
 
-      {/* Preview Canvas */}
-      <div className="flex-1 bg-(--surface) p-4">
-        <div className="flex h-full min-h-62.5 items-center justify-center rounded-md border border-black/5 bg-(--canvas)">
-          <div className="text-center text-(--canvas-text)">
-            <h1 className="text-3xl font-bold tracking-tight">
-              Hello, CodeSpace!
-            </h1>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Your preview will appear here.
-            </p>
-          </div>
+      {/* Sandpack Live Preview */}
+      <div className="min-h-0 flex-1 overflow-hidden bg-(--surface) p-4">
+        <div className="h-full min-h-62.5 overflow-hidden rounded-md bg-white">
+          <SandpackPreview
+            showOpenInCodeSandbox={false}
+            showRefreshButton
+            showNavigator={false}
+            style={{
+              height: "100%",
+              width: "100%",
+            }}
+          />
         </div>
       </div>
     </section>

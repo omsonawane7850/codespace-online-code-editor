@@ -2,19 +2,31 @@ import { Link } from "react-router-dom";
 
 import { FileCode2, Pencil, Trash2, ArrowUpRight } from "lucide-react";
 
-function ProjectCard({ project, onEdit, onDelete }) {
+import { useProjects } from "../../hooks/useProjects";
+
+function ProjectCard({ project }) {
+  const { openEditProjectModal, deleteProject } = useProjects();
+
+  const handleDelete = () => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this project?",
+    );
+
+    if (confirmDelete) {
+      deleteProject(project.id);
+    }
+  };
+
   return (
     <div className="rounded-xl border border-white/10 bg-white/2 p-5 transition hover:border-white/20 hover:bg-white/4">
-      {/* Card Header */}
       <div className="flex items-start justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
           <FileCode2 size={21} className="text-gray-300" />
         </div>
 
-        {/* Project Actions */}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => onEdit(project)}
+            onClick={() => openEditProjectModal(project)}
             title="Rename project"
             className="rounded-md p-2 text-gray-400 transition hover:bg-white/10 hover:text-white"
           >
@@ -22,7 +34,7 @@ function ProjectCard({ project, onEdit, onDelete }) {
           </button>
 
           <button
-            onClick={() => onDelete(project.id)}
+            onClick={handleDelete}
             title="Delete project"
             className="rounded-md p-2 text-gray-400 transition hover:bg-red-500/10 hover:text-red-400"
           >
@@ -31,7 +43,6 @@ function ProjectCard({ project, onEdit, onDelete }) {
         </div>
       </div>
 
-      {/* Project Details */}
       <h3 className="mt-5 truncate text-sm font-semibold text-white">
         {project.name}
       </h3>
@@ -40,7 +51,6 @@ function ProjectCard({ project, onEdit, onDelete }) {
         Created {new Date(project.createdAt).toLocaleDateString()}
       </p>
 
-      {/* Open Project */}
       <Link
         to={`/editor/${project.id}`}
         className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-xs font-medium text-gray-300 transition hover:text-white"

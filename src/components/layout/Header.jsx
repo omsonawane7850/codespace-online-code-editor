@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { Link } from "react-router-dom";
 
 import {
@@ -12,7 +13,14 @@ import {
 
 import { themes } from "../../data/themes";
 
-function Header({ theme, setTheme }) {
+import { useTheme } from "../../hooks/useTheme";
+import { useCurrentProject } from "../../hooks/useCurrentProject";
+
+function Header() {
+  const { theme, setTheme } = useTheme();
+
+  const currentProject = useCurrentProject();
+
   const [showThemes, setShowThemes] = useState(false);
 
   return (
@@ -35,7 +43,9 @@ function Header({ theme, setTheme }) {
 
           <span>/</span>
 
-          <span className="font-medium text-(--text)">Untitled Project</span>
+          <span className="font-medium text-(--text)">
+            {currentProject?.name || "Untitled Project"}
+          </span>
 
           <ChevronDown size={15} />
         </div>

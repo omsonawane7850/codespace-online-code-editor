@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 import { Folder, Plus, Search, Settings, FileCode2 } from "lucide-react";
 
-import { useProjects } from "../../context/ProjectContext";
+import { useProjects } from "../../hooks/useProjects";
 
 function Sidebar() {
-  const { projects } = useProjects();
+  const { projects, openCreateProjectModal } = useProjects();
 
   const recentProjects = [...projects].reverse().slice(0, 5);
 
@@ -13,13 +13,13 @@ function Sidebar() {
     <aside className="hidden w-57.5 shrink-0 flex-col border-r border-(--border) bg-(--sidebar) md:flex">
       {/* New Project */}
       <div className="p-4">
-        <Link
-          to="/"
+        <button
+          onClick={openCreateProjectModal}
           className="flex w-full items-center justify-center gap-2 rounded-md border border-(--border) bg-(--surface) py-2.5 text-xs transition hover:bg-(--hover)"
         >
           <Plus size={16} />
           New Project
-        </Link>
+        </button>
       </div>
 
       {/* Navigation */}

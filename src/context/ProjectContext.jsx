@@ -1,9 +1,13 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useState } from "react";
 
-const ProjectContext = createContext(null);
+export const ProjectContext = createContext(null);
 
 export function ProjectProvider({ children }) {
   const [projects, setProjects] = useState([]);
+
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+
+  const [projectToEdit, setProjectToEdit] = useState(null);
 
   // Create Project
   const addProject = (name) => {
@@ -34,26 +38,37 @@ export function ProjectProvider({ children }) {
     );
   };
 
+  // Open Create Modal
+  const openCreateProjectModal = () => {
+    setProjectToEdit(null);
+    setIsProjectModalOpen(true);
+  };
+
+  // Open Edit Modal
+  const openEditProjectModal = (project) => {
+    setProjectToEdit(project);
+    setIsProjectModalOpen(true);
+  };
+
+  // Close Modal
+  const closeProjectModal = () => {
+    setIsProjectModalOpen(false);
+    setProjectToEdit(null);
+  };
+
   const value = {
     projects,
     addProject,
     updateProject,
     deleteProject,
+    isProjectModalOpen,
+    projectToEdit,
+    openCreateProjectModal,
+    openEditProjectModal,
+    closeProjectModal,
   };
 
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
   );
-}
-
-// Custom Hook
-// eslint-disable-next-line react-refresh/only-export-components
-export function useProjects() {
-  const context = useContext(ProjectContext);
-
-  if (!context) {
-    throw new Error("useProjects must be used within a ProjectProvider");
-  }
-
-  return context;
 }

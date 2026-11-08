@@ -1,21 +1,43 @@
 import { useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import { X } from "lucide-react";
 
-function ProjectModal({ isOpen, onClose, onSubmit, project }) {
-  if (!isOpen) return null;
+import { useProjects } from "../../hooks/useProjects";
+
+function ProjectModal() {
+  const navigate = useNavigate();
+
+  const {
+    addProject,
+    updateProject,
+    isProjectModalOpen,
+    projectToEdit,
+    closeProjectModal,
+  } = useProjects();
+
+  if (!isProjectModalOpen) return null;
 
   return (
     <ProjectModalContent
-      key={project?.name || "new-project"}
-      onClose={onClose}
-      onSubmit={onSubmit}
-      project={project}
+      key={projectToEdit?.id || "new-project"}
+      project={projectToEdit}
+      addProject={addProject}
+      updateProject={updateProject}
+      closeProjectModal={closeProjectModal}
+      navigate={navigate}
     />
   );
 }
 
-function ProjectModalContent({ onClose, onSubmit, project }) {
+function ProjectModalContent({
+  project,
+  addProject,
+  updateProject,
+  closeProjectModal,
+  navigate,
+}) {
   const [projectName, setProjectName] = useState(project?.name || "");
 
   const isEditing = Boolean(project);
@@ -27,9 +49,16 @@ function ProjectModalContent({ onClose, onSubmit, project }) {
 
     if (!name) return;
 
-    onSubmit(name);
-    setProjectName("");
-    onClose();
+    if (isEditing) {
+      updateProject(project.id, name);
+      closeProjectModal();
+    } else {
+      const newProject = addProject(name);
+
+      closeProjectModal();
+
+      navigate(`/editor/${newProject.id}`);
+    }
   };
 
   return (
@@ -41,7 +70,7 @@ function ProjectModalContent({ onClose, onSubmit, project }) {
           </h2>
 
           <button
-            onClick={onClose}
+            onClick={closeProjectModal}
             className="text-gray-400 transition hover:text-white"
           >
             <X size={20} />
@@ -66,7 +95,7 @@ function ProjectModalContent({ onClose, onSubmit, project }) {
           <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={closeProjectModal}
               className="rounded-md border border-white/10 px-4 py-2 text-xs text-gray-300 transition hover:bg-white/5"
             >
               Cancel

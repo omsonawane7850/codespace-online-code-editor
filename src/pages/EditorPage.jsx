@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { SandpackProvider, SandpackLayout } from "@codesandbox/sandpack-react";
 
 import Header from "../components/layout/Header";
@@ -14,15 +12,17 @@ import PreviewPanel from "../components/preview/PreviewPanel";
 import initialFiles from "../data/initialFiles";
 import { themes } from "../data/themes";
 
+import { useTheme } from "../hooks/useTheme";
+
 function EditorPage() {
-  const [theme, setTheme] = useState("midnight");
+  const { theme } = useTheme();
 
   return (
     <div
       style={themes[theme].vars}
       className="flex h-screen min-h-125 flex-col overflow-hidden bg-(--bg) text-(--text)"
     >
-      <Header theme={theme} setTheme={setTheme} />
+      <Header />
 
       <div className="flex min-h-0 flex-1">
         <Sidebar />

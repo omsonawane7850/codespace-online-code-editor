@@ -5,8 +5,8 @@ import EditorPage from "./pages/EditorPage";
 
 import ProjectModal from "./components/projects/ProjectModal";
 
-import { ProjectProvider } from "./context/ProjectContext";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ProjectProvider } from "./context/ProjectProvider";
+import { ThemeProvider } from "./context/ThemeProvider";
 
 function App() {
   return (

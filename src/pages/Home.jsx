@@ -1,8 +1,47 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Code2, Plus, FolderCode, ArrowRight } from "lucide-react";
 
+import { useProjects } from "../context/ProjectContext";
+
+import ProjectCard from "../components/projects/ProjectCard";
+import ProjectModal from "../components/projects/ProjectModal";
+
 function Home() {
+  const { projects, addProject, updateProject, deleteProject } = useProjects();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState(null);
+
+  const handleCreateProject = () => {
+    setProjectToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditProject = (project) => {
+    setProjectToEdit(project);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (name) => {
+    if (projectToEdit) {
+      updateProject(projectToEdit.id, name);
+    } else {
+      addProject(name);
+    }
+  };
+
+  const handleDeleteProject = (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this project?",
+    );
+
+    if (confirmDelete) {
+      deleteProject(id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0c0e12] text-white">
       {/* Header */}
@@ -15,13 +54,13 @@ function Home() {
           </span>
         </Link>
 
-        <Link
-          to="/editor"
+        <button
+          onClick={handleCreateProject}
           className="flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-gray-200"
         >
           <Plus size={16} />
           New Project
-        </Link>
+        </button>
       </header>
 
       {/* Main Content */}
@@ -43,35 +82,58 @@ function Home() {
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-lg font-semibold">My Projects</h2>
 
-            <span className="text-xs text-gray-500">0 Projects</span>
+            <span className="text-xs text-gray-500">
+              {projects.length} {projects.length === 1 ? "Project" : "Projects"}
+            </span>
           </div>
 
-          <Link
-            to="/editor"
-            className="group flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/2 transition hover:border-white/40 hover:bg-white/4"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-              <FolderCode size={24} className="text-gray-300" />
+          {projects.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onEdit={handleEditProject}
+                  onDelete={handleDeleteProject}
+                />
+              ))}
             </div>
+          ) : (
+            <button
+              onClick={handleCreateProject}
+              className="group flex min-h-64 w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/2 transition hover:border-white/40 hover:bg-white/4"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
+                <FolderCode size={24} className="text-gray-300" />
+              </div>
 
-            <h3 className="mt-4 text-sm font-semibold">
-              Create your first project
-            </h3>
+              <h3 className="mt-4 text-sm font-semibold">
+                Create your first project
+              </h3>
 
-            <p className="mt-2 text-xs text-gray-500">
-              Start coding directly in your browser.
-            </p>
+              <p className="mt-2 text-xs text-gray-500">
+                Start coding directly in your browser.
+              </p>
 
-            <span className="mt-5 flex items-center gap-2 text-xs font-medium text-white">
-              Get Started
-              <ArrowRight
-                size={14}
-                className="transition group-hover:translate-x-1"
-              />
-            </span>
-          </Link>
+              <span className="mt-5 flex items-center gap-2 text-xs font-medium text-white">
+                Get Started
+                <ArrowRight
+                  size={14}
+                  className="transition group-hover:translate-x-1"
+                />
+              </span>
+            </button>
+          )}
         </section>
       </main>
+
+      {/* Project Modal */}
+      <ProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
+        project={projectToEdit}
+      />
     </div>
   );
 }

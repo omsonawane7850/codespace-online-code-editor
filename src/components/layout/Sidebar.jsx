@@ -2,15 +2,19 @@ import { Link } from "react-router-dom";
 
 import { Folder, Plus, Search, Settings, FileCode2 } from "lucide-react";
 
-const recentProjects = ["Portfolio Website", "React Dashboard", "Landing Page"];
+import { useProjects } from "../../context/ProjectContext";
 
 function Sidebar() {
+  const { projects } = useProjects();
+
+  const recentProjects = [...projects].reverse().slice(0, 5);
+
   return (
     <aside className="hidden w-57.5 shrink-0 flex-col border-r border-(--border) bg-(--sidebar) md:flex">
       {/* New Project */}
       <div className="p-4">
         <Link
-          to="/editor"
+          to="/"
           className="flex w-full items-center justify-center gap-2 rounded-md border border-(--border) bg-(--surface) py-2.5 text-xs transition hover:bg-(--hover)"
         >
           <Plus size={16} />
@@ -45,18 +49,25 @@ function Sidebar() {
             RECENT PROJECTS
           </p>
 
-          <Plus size={15} className="text-(--muted)" />
+          <span className="text-[10px] text-(--muted)">{projects.length}</span>
         </div>
 
         {recentProjects.map((project) => (
-          <button
-            key={project}
-            className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-xs text-(--muted) transition hover:bg-(--hover) hover:text-(--text)"
+          <Link
+            key={project.id}
+            to={`/editor/${project.id}`}
+            className="mb-1 flex w-full items-center gap-3 truncate rounded-md px-3 py-2.5 text-xs text-(--muted) transition hover:bg-(--hover) hover:text-(--text)"
           >
-            <FileCode2 size={16} />
-            {project}
-          </button>
+            <FileCode2 size={16} className="shrink-0" />
+            <span className="truncate">{project.name}</span>
+          </Link>
         ))}
+
+        {projects.length === 0 && (
+          <p className="px-3 py-2 text-xs text-(--subtle)">
+            No recent projects
+          </p>
+        )}
       </div>
 
       {/* Settings */}

@@ -47,17 +47,18 @@ const IGNORED_DIRS = new Set([
   ".next",
 ]);
 
-const MAX_FILE_SIZE = 500 * 1024; // 500KB
+const MAX_FILE_SIZE = 500 * 1024;
+
+const iconButtonClass =
+  "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
 function isSupportedFile(file) {
   const fileName = file.name.toLowerCase();
+
   const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
 
   return SPECIAL_FILES.has(fileName) || SUPPORTED_EXTENSIONS.has(extension);
 }
-
-const iconButtonClass =
-  "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
 function FileExplorer() {
   const { sandpack } = useSandpack();
@@ -70,32 +71,34 @@ function FileExplorer() {
     setImportStatus(message);
 
     clearTimeout(statusTimerRef.current);
+
     statusTimerRef.current = setTimeout(() => setImportStatus(""), 5000);
   }
 
   async function handleImport(event) {
     const input = event.target;
+
     const selectedFiles = Array.from(input.files || []);
 
-    console.log("handleImport fired:", selectedFiles.length, "files");
-
     if (selectedFiles.length === 0) return;
+
+    const isFolderImport = input.hasAttribute("webkitdirectory");
 
     showStatus(`${selectedFiles.length} selected, reading...`);
 
     const newFiles = {};
+
     let skippedCount = 0;
 
     try {
+      const folderRoot = isFolderImport
+        ? selectedFiles[0].webkitRelativePath.split("/")[0]
+        : "";
+
       for (const file of selectedFiles) {
         const parts = (file.webkitRelativePath || file.name)
           .split("/")
           .filter(Boolean);
-
-        // Folder import: top-level folder name hatao (myapp/src/App.js -> /src/App.js)
-        if (file.webkitRelativePath && parts.length > 1) {
-          parts.shift();
-        }
 
         const shouldSkip =
           !isSupportedFile(file) ||
@@ -107,21 +110,36 @@ function FileExplorer() {
           continue;
         }
 
-        newFiles["/" + parts.join("/")] = { code: await file.text() };
+        const relativeParts =
+          isFolderImport && parts[0] === folderRoot ? parts.slice(1) : parts;
+
+        if (relativeParts.length === 0) continue;
+
+        const filePath = "/" + relativeParts.join("/");
+
+        newFiles[filePath] = {
+          code: await file.text(),
+        };
       }
 
       const paths = Object.keys(newFiles);
 
       if (paths.length === 0) {
-        showStatus(
-          `Nothing imported (${skippedCount} skipped: type/size/folder)`,
-        );
+        showStatus(`Nothing imported (${skippedCount} skipped)`);
         return;
       }
 
-      // Ek hi call mein saari files
-      sandpack.updateFile(newFiles);
-      sandpack.openFile(paths[paths.length - 1]);
+      if (isFolderImport) {
+        const existingPaths = Object.keys(sandpack.files);
+
+        for (const path of existingPaths) {
+          await sandpack.deleteFile(path);
+        }
+      }
+
+      await sandpack.updateFile(newFiles);
+
+      sandpack.openFile(paths[0]);
 
       showStatus(
         skippedCount > 0
@@ -130,17 +148,19 @@ function FileExplorer() {
       );
     } catch (error) {
       console.error("File import failed:", error);
+
       showStatus(`Import failed: ${error.message}`);
+    } finally {
+      input.value = "";
     }
   }
 
-  // Click se pehle value reset: same file dobara chunne pe bhi onChange chale
   function resetValue(event) {
     event.target.value = "";
   }
 
   return (
-    <aside className="flex w-48 shrink-0 flex-col border-r border-(--border) bg-(--sidebar)">
+    <aside className="flex w-48 shrink-0 flex-col overflow-hidden border-r border-(--border) bg-(--sidebar)">
       {/* Explorer Header */}
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-(--border) px-3">
         <div className="flex items-center gap-2">
@@ -153,6 +173,7 @@ function FileExplorer() {
           {/* Import Files */}
           <label title="Import Files" className={iconButtonClass}>
             <Upload size={15} />
+
             <input
               type="file"
               multiple
@@ -165,6 +186,7 @@ function FileExplorer() {
           {/* Import Folder */}
           <label title="Import Folder" className={iconButtonClass}>
             <FolderUp size={15} />
+
             <input
               type="file"
               multiple
@@ -180,20 +202,23 @@ function FileExplorer() {
 
       {/* Import Status */}
       {importStatus && (
-        <div className="border-b border-(--border) px-3 py-2 text-[10px] text-(--muted)">
+        <div className="shrink-0 border-b border-(--border) px-3 py-2 text-[10px] text-(--muted)">
           {importStatus}
         </div>
       )}
 
-      {/* File Tree */}
-      <div className="min-h-0 flex-1 overflow-auto p-2">
-        <SandpackFileExplorer
-          autoHiddenFiles={false}
-          style={{
-            height: "100%",
-            width: "100%",
-          }}
-        />
+      {/* File List */}
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto p-2">
+        <div className="h-full w-max min-w-full">
+          <SandpackFileExplorer
+            autoHiddenFiles={false}
+            style={{
+              height: "100%",
+              width: "100%",
+              minWidth: "max-content",
+            }}
+          />
+        </div>
       </div>
     </aside>
   );

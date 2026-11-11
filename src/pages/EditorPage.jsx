@@ -1,3 +1,7 @@
+import { useState } from "react";
+
+import { Navigate, useParams } from "react-router-dom";
+
 import { SandpackProvider, SandpackLayout } from "@codesandbox/sandpack-react";
 
 import Header from "../components/layout/Header";
@@ -7,15 +11,49 @@ import WorkspaceToolbar from "../components/layout/WorkspaceToolbar";
 
 import FileExplorer from "../components/editor/FileExplorer";
 import EditorPanel from "../components/editor/EditorPanel";
+import ProjectFilesSync from "../components/editor/ProjectFilesSync";
+
 import PreviewPanel from "../components/preview/PreviewPanel";
 
 import initialFiles from "../data/initialFiles";
+
 import { themes } from "../data/themes";
 
 import { useTheme } from "../hooks/useTheme";
+import { useProjects } from "../hooks/useProjects";
 
+// Main Editor Page
 function EditorPage() {
+  const { projectId } = useParams();
+
+  const { projects } = useProjects();
+
   const { theme } = useTheme();
+
+  // Find current project using URL ID
+  const currentProject = projects.find((project) => project.id === projectId);
+
+  // Invalid project ID
+  if (projectId && !currentProject) {
+    return <Navigate to="/" replace />;
+  }
+
+  const projectFiles = currentProject?.files || initialFiles;
+
+  return (
+    <EditorWorkspace
+      key={projectId || "default"}
+      projectId={projectId}
+      projectFiles={projectFiles}
+      theme={theme}
+    />
+  );
+}
+
+// Editor Workspace
+function EditorWorkspace({ projectId, projectFiles, theme }) {
+  // Keep initial files stable while this project is mounted
+  const [files] = useState(projectFiles);
 
   return (
     <div
@@ -32,7 +70,7 @@ function EditorPage() {
 
           <SandpackProvider
             template="react"
-            files={initialFiles}
+            files={files}
             theme={theme === "light" ? "light" : "dark"}
             options={{
               activeFile: "/App.js",
@@ -41,6 +79,8 @@ function EditorPage() {
               recompileDelay: 500,
             }}
           >
+            <ProjectFilesSync projectId={projectId} />
+
             <SandpackLayout
               style={{
                 display: "flex",

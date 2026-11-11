@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ProjectContext } from "./ProjectContext";
 
 import initialFiles from "../data/initialFiles";
+
+const STORAGE_KEY = "codespace-projects";
 
 // Create a separate copy of files for every project
 function cloneFiles(files) {
@@ -11,12 +13,59 @@ function cloneFiles(files) {
   );
 }
 
+// Load projects from LocalStorage
+function getStoredProjects() {
+  try {
+    const savedProjects = localStorage.getItem(STORAGE_KEY);
+
+    if (!savedProjects) {
+      return [];
+    }
+
+    const parsedProjects = JSON.parse(savedProjects);
+
+    if (!Array.isArray(parsedProjects)) {
+      return [];
+    }
+
+    return parsedProjects
+      .filter(
+        (project) =>
+          project &&
+          typeof project.id === "string" &&
+          typeof project.name === "string",
+      )
+      .map((project) => ({
+        ...project,
+        files:
+          project.files &&
+          typeof project.files === "object" &&
+          !Array.isArray(project.files)
+            ? project.files
+            : cloneFiles(initialFiles),
+      }));
+  } catch (error) {
+    console.error("Failed to load projects:", error);
+
+    return [];
+  }
+}
+
 export function ProjectProvider({ children }) {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState(getStoredProjects);
 
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const [projectToEdit, setProjectToEdit] = useState(null);
+
+  // Save projects to LocalStorage whenever projects change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    } catch (error) {
+      console.error("Failed to save projects:", error);
+    }
+  }, [projects]);
 
   // Create Project
   const addProject = useCallback((name) => {
@@ -51,7 +100,6 @@ export function ProjectProvider({ children }) {
           return project;
         }
 
-        // Avoid unnecessary state updates
         if (JSON.stringify(project.files) === JSON.stringify(nextFiles)) {
           return project;
         }

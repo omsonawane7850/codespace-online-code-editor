@@ -1,11 +1,13 @@
-const ENTRY_CANDIDATES = [
+// Entry files that mean "this project has its own code"
+const OWN_ENTRY_CANDIDATES = [
   "/src/main.jsx",
   "/src/main.js",
   "/src/index.jsx",
   "/src/index.js",
   "/index.jsx",
-  "/index.js",
 ];
+
+const ENTRY_CANDIDATES = [...OWN_ENTRY_CANDIDATES, "/index.js"];
 
 // Files the "react" template injects into every project
 const TEMPLATE_FILES = ["/index.js", "/App.js", "/styles.css"];
@@ -34,6 +36,56 @@ export function usesTailwind(files) {
   const raw = files["/package.json"]?.code;
 
   return typeof raw === "string" && raw.includes('"tailwindcss"');
+}
+
+function codeOf(file) {
+  return typeof file === "string" ? file : (file?.code ?? "");
+}
+
+// Remove the old starter-template files that got saved into an imported project.
+// Only runs when the project has its own entry file, and only removes files
+// that still look like the untouched starter code.
+export function stripTemplateLeftovers(files) {
+  const hasOwnEntry = OWN_ENTRY_CANDIDATES.some((path) => path in files);
+
+  if (!hasOwnEntry) return files;
+
+  const result = { ...files };
+
+  const app = codeOf(result["/App.js"]);
+  if ("/App.js" in result && app.length < 300 && app.includes("Hello world")) {
+    delete result["/App.js"];
+  }
+
+  const styles = codeOf(result["/styles.css"]);
+  if (
+    "/styles.css" in result &&
+    styles.length < 400 &&
+    styles.includes("sans-serif")
+  ) {
+    delete result["/styles.css"];
+  }
+
+  const index = codeOf(result["/index.js"]);
+  if (
+    "/index.js" in result &&
+    index.length < 600 &&
+    index.includes("./App") &&
+    index.includes("./styles.css")
+  ) {
+    delete result["/index.js"];
+  }
+
+  const html = codeOf(result["/public/index.html"]);
+  if (
+    "/public/index.html" in result &&
+    html.length < 700 &&
+    (html.includes("CodeSpace") || html.includes("Document"))
+  ) {
+    delete result["/public/index.html"];
+  }
+
+  return result;
 }
 
 // Override template leftovers with empty hidden files so they never show or run

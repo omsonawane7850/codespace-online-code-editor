@@ -24,6 +24,7 @@ import {
   detectEntry,
   usesTailwind,
   hideTemplateLeftovers,
+  stripTemplateLeftovers,
 } from "../utils/projectKind";
 
 import { useTheme } from "../hooks/useTheme";
@@ -51,6 +52,7 @@ function EditorPage() {
   const projectFiles = currentProject?.files || initialFiles;
 
   // Import writes straight to project state, then remounts the workspace.
+  // Folder / ZIP ("replace") throws away every old file, including starter code.
   // Returns an error message string, or nothing on success.
   function handleImport(newFiles, mode) {
     if (!currentProject) {
@@ -58,7 +60,9 @@ function EditorPage() {
     }
 
     const nextFiles =
-      mode === "replace" ? newFiles : { ...currentProject.files, ...newFiles };
+      mode === "replace"
+        ? stripTemplateLeftovers(newFiles)
+        : stripTemplateLeftovers({ ...currentProject.files, ...newFiles });
 
     updateProjectFiles(currentProject.id, nextFiles);
 
@@ -80,21 +84,20 @@ function EditorPage() {
 
 // Editor Workspace
 function EditorWorkspace({ projectId, projectFiles, theme, onImport }) {
-  // Real entry file of this project (src/main.jsx, index.js, ...)
-  const [entry] = useState(() => detectEntry(projectFiles));
+  // Project files with old starter-template leftovers removed (also fixes old saved projects)
+  const [cleanFiles] = useState(() => stripTemplateLeftovers(projectFiles));
 
-  // Project files + hidden overrides for template leftovers
-  const [files] = useState(() =>
-    hideTemplateLeftovers(projectFiles, detectEntry(projectFiles)),
-  );
+  // Real entry file of this project (src/main.jsx, index.js, ...)
+  const [entry] = useState(() => detectEntry(cleanFiles));
+
+  // Project files + hidden overrides so template files never show or run
+  const [files] = useState(() => hideTemplateLeftovers(cleanFiles, entry));
 
   // Restore last active file + open tabs (only once on mount)
-  const [editorState] = useState(() =>
-    loadEditorState(projectId, projectFiles),
-  );
+  const [editorState] = useState(() => loadEditorState(projectId, cleanFiles));
 
   // Tailwind in preview (Vite plugin doesn't run here, so use the browser build)
-  const [tailwind] = useState(() => usesTailwind(projectFiles));
+  const [tailwind] = useState(() => usesTailwind(cleanFiles));
 
   return (
     <div

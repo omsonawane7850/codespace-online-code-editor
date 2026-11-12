@@ -4,7 +4,7 @@ import { Code2, MoreHorizontal } from "lucide-react";
 
 function EditorPanel() {
   return (
-    <section className="flex min-h-87.5 min-w-0 flex-1 flex-col bg-(--panel) lg:min-h-0">
+    <section className="flex min-h-0 min-w-80 flex-1 flex-col bg-(--panel)">
       {/* Editor Header */}
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-(--border) px-4">
         <div className="flex items-center gap-2 text-xs font-medium">
@@ -15,15 +15,17 @@ function EditorPanel() {
         <MoreHorizontal size={18} className="cursor-pointer text-(--muted)" />
       </div>
 
-      {/* Editor with File Tabs */}
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <SandpackCodeEditor
-          showLineNumbers
-          showTabs
-          closableTabs
-          wrapContent={false}
-          style={{ height: "100%" }}
-        />
+      {/* Editor with File Tabs (absolute fill = guaranteed bounded height) */}
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
+          <SandpackCodeEditor
+            showLineNumbers
+            showTabs
+            closableTabs
+            wrapContent={false}
+            style={{ height: "100%" }}
+          />
+        </div>
       </div>
 
       {/* Editor Footer */}

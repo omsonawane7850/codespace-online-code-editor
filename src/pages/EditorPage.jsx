@@ -19,6 +19,8 @@ import initialFiles from "../data/initialFiles";
 
 import { themes } from "../data/themes";
 
+import { loadEditorState } from "../utils/editorState";
+
 import { useTheme } from "../hooks/useTheme";
 import { useProjects } from "../hooks/useProjects";
 
@@ -55,25 +57,40 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
   // Keep initial files stable while this project is mounted
   const [files] = useState(projectFiles);
 
+  // Restore last active file + open tabs (only once on mount)
+  const [editorState] = useState(() =>
+    loadEditorState(projectId, projectFiles),
+  );
+
   return (
     <div
       style={themes[theme].vars}
-      className="flex h-screen min-h-125 flex-col overflow-hidden bg-(--bg) text-(--text)"
+      className="flex h-screen flex-col overflow-hidden bg-(--bg) text-(--text)"
     >
       <Header />
 
       <div className="flex min-h-0 flex-1">
         <Sidebar />
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceToolbar />
 
           <SandpackProvider
             template="react"
             files={files}
             theme={theme === "light" ? "light" : "dark"}
+            // Wrapper div of Sandpack must be a flex child, otherwise layout overflows the page
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              minHeight: 0,
+              width: "100%",
+              height: "auto",
+            }}
             options={{
-              activeFile: "/App.js",
+              activeFile: editorState.activeFile,
+              visibleFiles: editorState.visibleFiles,
               autorun: true,
               recompileMode: "delayed",
               recompileDelay: 500,
@@ -84,6 +101,7 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
             <SandpackLayout
               style={{
                 display: "flex",
+                flexWrap: "nowrap",
                 flex: 1,
                 minHeight: 0,
                 width: "100%",
@@ -91,7 +109,8 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
                 borderRadius: 0,
                 gap: "1px",
                 background: "var(--border)",
-                overflow: "auto",
+                overflowX: "auto",
+                overflowY: "hidden",
               }}
             >
               <FileExplorer />

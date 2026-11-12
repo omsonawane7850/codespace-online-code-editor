@@ -72,7 +72,9 @@ function FileExplorer() {
 
     clearTimeout(statusTimerRef.current);
 
-    statusTimerRef.current = setTimeout(() => setImportStatus(""), 5000);
+    statusTimerRef.current = setTimeout(() => {
+      setImportStatus("");
+    }, 5000);
   }
 
   async function handleImport(event) {
@@ -130,6 +132,7 @@ function FileExplorer() {
       }
 
       if (isFolderImport) {
+        // Existing folder import behavior
         const existingPaths = Object.keys(sandpack.files);
 
         for (const path of existingPaths) {
@@ -160,7 +163,7 @@ function FileExplorer() {
   }
 
   return (
-    <aside className="flex w-48 shrink-0 flex-col overflow-hidden border-r border-(--border) bg-(--sidebar)">
+    <aside className="flex min-h-0 w-48 shrink-0 flex-col self-stretch overflow-hidden border-r border-(--border) bg-(--sidebar)">
       {/* Explorer Header */}
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-(--border) px-3">
         <div className="flex items-center gap-2">
@@ -207,15 +210,15 @@ function FileExplorer() {
         </div>
       )}
 
-      {/* File List */}
-      <div className="min-h-0 min-w-0 flex-1 overflow-auto p-2">
-        <div className="h-full w-max min-w-full">
+      {/* File Explorer Tree */}
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+        <div className="min-h-full w-max min-w-full p-2">
           <SandpackFileExplorer
             autoHiddenFiles={false}
             style={{
-              height: "100%",
-              width: "100%",
-              minWidth: "max-content",
+              minHeight: "100%",
+              width: "max-content",
+              minWidth: "100%",
             }}
           />
         </div>

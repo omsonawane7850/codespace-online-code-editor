@@ -4,6 +4,8 @@ import { FolderOpen, Upload, FolderUp, FileArchive } from "lucide-react";
 
 import { SandpackFileExplorer, useSandpack } from "@codesandbox/sandpack-react";
 
+import DependencyManager from "./DependencyManager";
+
 import { readZipFiles } from "../../utils/zip";
 
 import {
@@ -240,6 +242,9 @@ function FileExplorer() {
           />
         </div>
       </div>
+
+      {/* Dependencies */}
+      <DependencyManager />
     </aside>
   );
 }

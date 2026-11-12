@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 import { FolderOpen, Upload, FolderUp, FileArchive } from "lucide-react";
 
-import { SandpackFileExplorer, useSandpack } from "@codesandbox/sandpack-react";
+import { SandpackFileExplorer } from "@codesandbox/sandpack-react";
 
 import DependencyManager from "./DependencyManager";
 
@@ -17,18 +17,8 @@ import {
 const iconButtonClass =
   "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
-// Prefer a sensible entry file after import
-function pickFileToOpen(paths) {
-  return (
-    ["/App.js", "/App.jsx", "/src/App.jsx", "/src/App.js", "/index.js"].find(
-      (path) => paths.includes(path),
-    ) ?? paths[0]
-  );
-}
-
-function FileExplorer() {
-  const { sandpack } = useSandpack();
-
+// onImport(newFiles, "replace" | "merge") is handled by EditorPage
+function FileExplorer({ onImport }) {
   const statusTimerRef = useRef(null);
 
   const [importStatus, setImportStatus] = useState("");
@@ -41,17 +31,6 @@ function FileExplorer() {
     statusTimerRef.current = setTimeout(() => {
       setImportStatus("");
     }, 5000);
-  }
-
-  // Replace every file in the workspace with the imported set
-  async function replaceAllFiles(newFiles) {
-    for (const path of Object.keys(sandpack.files)) {
-      await sandpack.deleteFile(path);
-    }
-
-    await sandpack.updateFile(newFiles);
-
-    sandpack.openFile(pickFileToOpen(Object.keys(newFiles)));
   }
 
   // Files / Folder import
@@ -100,25 +79,14 @@ function FileExplorer() {
         };
       }
 
-      const paths = Object.keys(newFiles);
-
-      if (paths.length === 0) {
+      if (Object.keys(newFiles).length === 0) {
         showStatus(`Nothing imported (${skippedCount} skipped)`);
         return;
       }
 
-      if (isFolderImport) {
-        await replaceAllFiles(newFiles);
-      } else {
-        await sandpack.updateFile(newFiles);
-        sandpack.openFile(paths[0]);
-      }
+      const error = onImport(newFiles, isFolderImport ? "replace" : "merge");
 
-      showStatus(
-        skippedCount > 0
-          ? `${paths.length} imported, ${skippedCount} skipped`
-          : `${paths.length} file(s) imported`,
-      );
+      if (error) showStatus(error);
     } catch (error) {
       console.error("File import failed:", error);
 
@@ -141,20 +109,14 @@ function FileExplorer() {
     try {
       const { files: newFiles, skipped } = await readZipFiles(zipFile);
 
-      const count = Object.keys(newFiles).length;
-
-      if (count === 0) {
+      if (Object.keys(newFiles).length === 0) {
         showStatus(`Nothing imported (${skipped} skipped)`);
         return;
       }
 
-      await replaceAllFiles(newFiles);
+      const error = onImport(newFiles, "replace");
 
-      showStatus(
-        skipped > 0
-          ? `ZIP: ${count} imported, ${skipped} skipped`
-          : `ZIP: ${count} file(s) imported`,
-      );
+      if (error) showStatus(error);
     } catch (error) {
       console.error("ZIP import failed:", error);
 

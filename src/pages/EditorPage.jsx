@@ -19,7 +19,12 @@ import initialFiles from "../data/initialFiles";
 
 import { themes } from "../data/themes";
 
-import { loadEditorState } from "../utils/editorState";
+import { loadEditorState, clearEditorState } from "../utils/editorState";
+import {
+  detectEntry,
+  usesTailwind,
+  hideTemplateLeftovers,
+} from "../utils/projectKind";
 
 import { useTheme } from "../hooks/useTheme";
 import { useProjects } from "../hooks/useProjects";
@@ -28,9 +33,12 @@ import { useProjects } from "../hooks/useProjects";
 function EditorPage() {
   const { projectId } = useParams();
 
-  const { projects } = useProjects();
+  const { projects, updateProjectFiles } = useProjects();
 
   const { theme } = useTheme();
+
+  // Bumped after import so the workspace remounts with the new files
+  const [reloadCount, setReloadCount] = useState(0);
 
   // Find current project using URL ID
   const currentProject = projects.find((project) => project.id === projectId);
@@ -42,25 +50,51 @@ function EditorPage() {
 
   const projectFiles = currentProject?.files || initialFiles;
 
+  // Import writes straight to project state, then remounts the workspace.
+  // Returns an error message string, or nothing on success.
+  function handleImport(newFiles, mode) {
+    if (!currentProject) {
+      return "Open a project first (create one from the sidebar)";
+    }
+
+    const nextFiles =
+      mode === "replace" ? newFiles : { ...currentProject.files, ...newFiles };
+
+    updateProjectFiles(currentProject.id, nextFiles);
+
+    clearEditorState(currentProject.id);
+
+    setReloadCount((count) => count + 1);
+  }
+
   return (
     <EditorWorkspace
-      key={projectId || "default"}
+      key={`${projectId || "default"}-${reloadCount}`}
       projectId={projectId}
       projectFiles={projectFiles}
       theme={theme}
+      onImport={handleImport}
     />
   );
 }
 
 // Editor Workspace
-function EditorWorkspace({ projectId, projectFiles, theme }) {
-  // Keep initial files stable while this project is mounted
-  const [files] = useState(projectFiles);
+function EditorWorkspace({ projectId, projectFiles, theme, onImport }) {
+  // Real entry file of this project (src/main.jsx, index.js, ...)
+  const [entry] = useState(() => detectEntry(projectFiles));
+
+  // Project files + hidden overrides for template leftovers
+  const [files] = useState(() =>
+    hideTemplateLeftovers(projectFiles, detectEntry(projectFiles)),
+  );
 
   // Restore last active file + open tabs (only once on mount)
   const [editorState] = useState(() =>
     loadEditorState(projectId, projectFiles),
   );
+
+  // Tailwind in preview (Vite plugin doesn't run here, so use the browser build)
+  const [tailwind] = useState(() => usesTailwind(projectFiles));
 
   return (
     <div
@@ -79,6 +113,7 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
             template="react"
             files={files}
             theme={theme === "light" ? "light" : "dark"}
+            customSetup={{ entry }}
             // Wrapper div of Sandpack must be a flex child, otherwise layout overflows the page
             style={{
               display: "flex",
@@ -91,6 +126,9 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
             options={{
               activeFile: editorState.activeFile,
               visibleFiles: editorState.visibleFiles,
+              externalResources: tailwind
+                ? ["https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"]
+                : [],
               autorun: true,
               recompileMode: "delayed",
               recompileDelay: 500,
@@ -113,7 +151,7 @@ function EditorWorkspace({ projectId, projectFiles, theme }) {
                 overflowY: "hidden",
               }}
             >
-              <FileExplorer />
+              <FileExplorer onImport={onImport} />
 
               <EditorPanel />
 

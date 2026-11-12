@@ -23,7 +23,11 @@ export function loadEditorState(projectId, files) {
 
   if (!paths.includes(activeFile)) {
     activeFile =
-      visibleFiles[0] ?? (paths.includes("/App.js") ? "/App.js" : paths[0]);
+      visibleFiles[0] ??
+      ["/App.js", "/App.jsx", "/src/App.jsx", "/src/App.js"].find((path) =>
+        paths.includes(path),
+      ) ??
+      paths[0];
   }
 
   if (!visibleFiles.includes(activeFile)) {
@@ -38,5 +42,14 @@ export function saveEditorState(projectId, state) {
     localStorage.setItem(keyFor(projectId), JSON.stringify(state));
   } catch (error) {
     console.error("Failed to save editor state:", error);
+  }
+}
+
+// Used after import so old tabs don't leak into the new file set
+export function clearEditorState(projectId) {
+  try {
+    localStorage.removeItem(keyFor(projectId));
+  } catch (error) {
+    console.error("Failed to clear editor state:", error);
   }
 }

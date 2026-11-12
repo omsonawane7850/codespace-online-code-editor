@@ -1,63 +1,27 @@
 import { useRef, useState } from "react";
 
-import { FolderOpen, Upload, FolderUp } from "lucide-react";
+import { FolderOpen, Upload, FolderUp, FileArchive } from "lucide-react";
 
 import { SandpackFileExplorer, useSandpack } from "@codesandbox/sandpack-react";
 
-const SUPPORTED_EXTENSIONS = new Set([
-  "js",
-  "jsx",
-  "ts",
-  "tsx",
-  "css",
-  "scss",
-  "html",
-  "json",
-  "md",
-  "txt",
-  "svg",
-  "xml",
-  "yml",
-  "yaml",
-  "env",
-  "sql",
-  "sh",
-  "py",
-  "java",
-  "c",
-  "cpp",
-  "h",
-  "cs",
-]);
+import { readZipFiles } from "../../utils/zip";
 
-const SPECIAL_FILES = new Set([
-  ".gitignore",
-  ".prettierrc",
-  ".babelrc",
-  "dockerfile",
-  "license",
-  "makefile",
-]);
-
-const IGNORED_DIRS = new Set([
-  "node_modules",
-  ".git",
-  "dist",
-  "build",
-  ".next",
-]);
-
-const MAX_FILE_SIZE = 500 * 1024;
+import {
+  IGNORED_DIRS,
+  MAX_FILE_SIZE,
+  isSupportedName,
+} from "../../utils/importFilters";
 
 const iconButtonClass =
   "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
-function isSupportedFile(file) {
-  const fileName = file.name.toLowerCase();
-
-  const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
-
-  return SPECIAL_FILES.has(fileName) || SUPPORTED_EXTENSIONS.has(extension);
+// Prefer a sensible entry file after import
+function pickFileToOpen(paths) {
+  return (
+    ["/App.js", "/App.jsx", "/src/App.jsx", "/src/App.js", "/index.js"].find(
+      (path) => paths.includes(path),
+    ) ?? paths[0]
+  );
 }
 
 function FileExplorer() {
@@ -77,6 +41,18 @@ function FileExplorer() {
     }, 5000);
   }
 
+  // Replace every file in the workspace with the imported set
+  async function replaceAllFiles(newFiles) {
+    for (const path of Object.keys(sandpack.files)) {
+      await sandpack.deleteFile(path);
+    }
+
+    await sandpack.updateFile(newFiles);
+
+    sandpack.openFile(pickFileToOpen(Object.keys(newFiles)));
+  }
+
+  // Files / Folder import
   async function handleImport(event) {
     const input = event.target;
 
@@ -103,7 +79,7 @@ function FileExplorer() {
           .filter(Boolean);
 
         const shouldSkip =
-          !isSupportedFile(file) ||
+          !isSupportedName(file.name) ||
           file.size > MAX_FILE_SIZE ||
           parts.some((part) => IGNORED_DIRS.has(part));
 
@@ -117,9 +93,7 @@ function FileExplorer() {
 
         if (relativeParts.length === 0) continue;
 
-        const filePath = "/" + relativeParts.join("/");
-
-        newFiles[filePath] = {
+        newFiles["/" + relativeParts.join("/")] = {
           code: await file.text(),
         };
       }
@@ -132,17 +106,11 @@ function FileExplorer() {
       }
 
       if (isFolderImport) {
-        // Existing folder import behavior
-        const existingPaths = Object.keys(sandpack.files);
-
-        for (const path of existingPaths) {
-          await sandpack.deleteFile(path);
-        }
+        await replaceAllFiles(newFiles);
+      } else {
+        await sandpack.updateFile(newFiles);
+        sandpack.openFile(paths[0]);
       }
-
-      await sandpack.updateFile(newFiles);
-
-      sandpack.openFile(paths[0]);
 
       showStatus(
         skippedCount > 0
@@ -153,6 +121,42 @@ function FileExplorer() {
       console.error("File import failed:", error);
 
       showStatus(`Import failed: ${error.message}`);
+    } finally {
+      input.value = "";
+    }
+  }
+
+  // ZIP import
+  async function handleZipImport(event) {
+    const input = event.target;
+
+    const zipFile = input.files?.[0];
+
+    if (!zipFile) return;
+
+    showStatus("Reading ZIP...");
+
+    try {
+      const { files: newFiles, skipped } = await readZipFiles(zipFile);
+
+      const count = Object.keys(newFiles).length;
+
+      if (count === 0) {
+        showStatus(`Nothing imported (${skipped} skipped)`);
+        return;
+      }
+
+      await replaceAllFiles(newFiles);
+
+      showStatus(
+        skipped > 0
+          ? `ZIP: ${count} imported, ${skipped} skipped`
+          : `ZIP: ${count} file(s) imported`,
+      );
+    } catch (error) {
+      console.error("ZIP import failed:", error);
+
+      showStatus(`ZIP import failed: ${error.message}`);
     } finally {
       input.value = "";
     }
@@ -197,6 +201,19 @@ function FileExplorer() {
               directory=""
               onClick={resetValue}
               onChange={handleImport}
+              className="sr-only"
+            />
+          </label>
+
+          {/* Import ZIP */}
+          <label title="Import ZIP" className={iconButtonClass}>
+            <FileArchive size={15} />
+
+            <input
+              type="file"
+              accept=".zip,application/zip"
+              onClick={resetValue}
+              onChange={handleZipImport}
               className="sr-only"
             />
           </label>

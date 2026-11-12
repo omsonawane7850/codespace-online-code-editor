@@ -9,9 +9,12 @@ import {
   Palette,
   Check,
   Play,
+  Loader2,
 } from "lucide-react";
 
 import { themes } from "../../data/themes";
+
+import { exportProjectZip } from "../../utils/zip";
 
 import { useTheme } from "../../hooks/useTheme";
 import { useCurrentProject } from "../../hooks/useCurrentProject";
@@ -22,6 +25,23 @@ function Header() {
   const currentProject = useCurrentProject();
 
   const [showThemes, setShowThemes] = useState(false);
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function handleDownload() {
+    if (!currentProject || isExporting) return;
+
+    setIsExporting(true);
+
+    try {
+      await exportProjectZip(currentProject);
+    } catch (error) {
+      console.error("ZIP export failed:", error);
+      window.alert("Export failed: " + error.message);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <header className="z-10 flex h-14 shrink-0 items-center justify-between border-b border-(--border) bg-(--sidebar) px-5">
@@ -58,9 +78,21 @@ function Header() {
           All changes saved
         </div>
 
-        {/* Download */}
-        <button className="rounded-md p-2 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)">
-          <Download size={17} />
+        {/* Download ZIP */}
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={!currentProject || isExporting}
+          title={
+            currentProject ? "Download as ZIP" : "Open a project to export"
+          }
+          className="rounded-md p-2 text-(--muted) transition hover:bg-(--hover) hover:text-(--text) disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isExporting ? (
+            <Loader2 size={17} className="animate-spin" />
+          ) : (
+            <Download size={17} />
+          )}
         </button>
 
         {/* Theme Selector */}

@@ -30,6 +30,15 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import { useProjects } from "../hooks/useProjects";
 
+// Files that Sandpack's "react" template injects on its own.
+// Any of these that the project does not really own gets hidden.
+const TEMPLATE_PATHS = [
+  "/App.js",
+  "/index.js",
+  "/styles.css",
+  "/public/index.html",
+];
+
 // Main Editor Page
 function EditorPage() {
   const { projectId } = useParams();
@@ -51,7 +60,6 @@ function EditorPage() {
 
   const projectFiles = currentProject?.files || initialFiles;
 
-  // Import writes straight to project state, then remounts the workspace.
   // Folder / ZIP ("replace") removes every old file, including starter code.
   // Returns a message string if nothing was imported, or nothing on success.
   function handleImport(newFiles, mode) {
@@ -67,10 +75,15 @@ function EditorPage() {
       if (!confirmed) return "Import cancelled";
     }
 
+    // Drop hidden placeholder files from the old project before merging
+    const visibleOldFiles = Object.fromEntries(
+      Object.entries(currentProject.files).filter(([, file]) => !file.hidden),
+    );
+
     const nextFiles =
       mode === "replace"
         ? stripTemplateLeftovers(newFiles)
-        : stripTemplateLeftovers({ ...currentProject.files, ...newFiles });
+        : stripTemplateLeftovers({ ...visibleOldFiles, ...newFiles });
 
     updateProjectFiles(currentProject.id, nextFiles);
 
@@ -92,17 +105,47 @@ function EditorPage() {
 
 // Editor Workspace
 function EditorWorkspace({ projectId, projectFiles, theme, onImport }) {
-  // Project files with old starter-template leftovers removed (also fixes old saved projects)
-  const [cleanFiles] = useState(() => stripTemplateLeftovers(projectFiles));
+  // Project files with old starter-template leftovers removed
+  const [cleanFiles] = useState(() =>
+    stripTemplateLeftovers(
+      Object.fromEntries(
+        Object.entries(projectFiles).filter(([, file]) => !file.hidden),
+      ),
+    ),
+  );
 
   // Real entry file of this project (src/main.jsx, index.js, ...)
   const [entry] = useState(() => detectEntry(cleanFiles));
 
   // Project files + hidden overrides so template files never show or run
-  const [files] = useState(() => hideTemplateLeftovers(cleanFiles, entry));
+  const [files] = useState(() => {
+    const base = hideTemplateLeftovers(cleanFiles, entry);
 
-  // Restore last active file + open tabs (only once on mount)
-  const [editorState] = useState(() => loadEditorState(projectId, cleanFiles));
+    const extraHidden = {};
+
+    for (const path of TEMPLATE_PATHS) {
+      if (!cleanFiles[path] && path !== entry) {
+        extraHidden[path] = { code: "", hidden: true };
+      }
+    }
+
+    return { ...base, ...extraHidden };
+  });
+
+  // Restore last active file + open tabs, minus anything hidden
+  const [editorState] = useState(() => {
+    const saved = loadEditorState(projectId, cleanFiles);
+
+    const isVisible = (path) => files[path] && !files[path].hidden;
+
+    const visibleFiles = (saved.visibleFiles || []).filter(isVisible);
+
+    const activeFile = isVisible(saved.activeFile)
+      ? saved.activeFile
+      : visibleFiles[0] || Object.keys(files).find(isVisible);
+
+    return { activeFile, visibleFiles };
+  });
 
   // Tailwind in preview (Vite plugin doesn't run here, so use the browser build)
   const [tailwind] = useState(() => usesTailwind(cleanFiles));

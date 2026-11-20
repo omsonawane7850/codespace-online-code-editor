@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { FolderOpen, Upload, FolderUp, FileArchive } from "lucide-react";
+import {
+  FolderOpen,
+  Upload,
+  FolderUp,
+  FileArchive,
+  File,
+  Folder,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 
-import { SandpackFileExplorer } from "@codesandbox/sandpack-react";
+import { useSandpack } from "@codesandbox/sandpack-react";
 
 import DependencyManager from "./DependencyManager";
 
@@ -17,16 +26,128 @@ import {
 const iconButtonClass =
   "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
+// Builds a nested tree from flat paths, skipping hidden files
+function buildTree(files) {
+  const root = { folders: {}, files: [] };
+
+  for (const [path, file] of Object.entries(files)) {
+    if (file.hidden) continue;
+
+    const parts = path.split("/").filter(Boolean);
+    let node = root;
+
+    parts.slice(0, -1).forEach((part) => {
+      node.folders[part] = node.folders[part] || { folders: {}, files: [] };
+      node = node.folders[part];
+    });
+
+    node.files.push({ name: parts[parts.length - 1], path });
+  }
+
+  return root;
+}
+
+function TreeNode({
+  node,
+  depth,
+  parentPath,
+  collapsed,
+  toggle,
+  activeFile,
+  onOpen,
+}) {
+  const folderNames = Object.keys(node.folders).sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  const fileItems = [...node.files].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  return (
+    <>
+      {folderNames.map((name) => {
+        const folderPath = `${parentPath}/${name}`;
+        const isCollapsed = collapsed.has(folderPath);
+
+        return (
+          <div key={folderPath}>
+            <button
+              type="button"
+              onClick={() => toggle(folderPath)}
+              style={{ paddingLeft: 8 + depth * 12 }}
+              className="flex w-full items-center gap-1.5 rounded py-1 pr-2 text-left text-xs text-(--muted) transition hover:bg-(--hover) hover:text-(--text)"
+            >
+              {isCollapsed ? (
+                <ChevronRight size={13} />
+              ) : (
+                <ChevronDown size={13} />
+              )}
+              <Folder size={13} className="shrink-0" />
+              <span className="whitespace-nowrap">{name}</span>
+            </button>
+
+            {!isCollapsed && (
+              <TreeNode
+                node={node.folders[name]}
+                depth={depth + 1}
+                parentPath={folderPath}
+                collapsed={collapsed}
+                toggle={toggle}
+                activeFile={activeFile}
+                onOpen={onOpen}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      {fileItems.map((file) => (
+        <button
+          key={file.path}
+          type="button"
+          onClick={() => onOpen(file.path)}
+          style={{ paddingLeft: 8 + depth * 12 + 14 }}
+          className={`flex w-full items-center gap-1.5 rounded py-1 pr-2 text-left text-xs transition ${
+            activeFile === file.path
+              ? "bg-(--active) text-(--text)"
+              : "text-(--muted) hover:bg-(--hover) hover:text-(--text)"
+          }`}
+        >
+          <File size={13} className="shrink-0" />
+          <span className="whitespace-nowrap">{file.name}</span>
+        </button>
+      ))}
+    </>
+  );
+}
+
 // onImport(newFiles, "replace" | "merge") is handled by EditorPage.
 // It returns a message string if the import did not happen.
 function FileExplorer({ onImport }) {
+  const { sandpack } = useSandpack();
+
   const statusTimerRef = useRef(null);
 
   const [importStatus, setImportStatus] = useState("");
+  const [collapsed, setCollapsed] = useState(() => new Set());
 
   useEffect(() => {
     return () => clearTimeout(statusTimerRef.current);
   }, []);
+
+  const tree = useMemo(() => buildTree(sandpack.files), [sandpack.files]);
+
+  function toggleFolder(path) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+
+      return next;
+    });
+  }
 
   function showStatus(message) {
     setImportStatus(message);
@@ -217,16 +338,17 @@ function FileExplorer({ onImport }) {
         </div>
       )}
 
-      {/* File Explorer Tree */}
+      {/* File Tree (hidden files are never shown) */}
       <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-        <div className="min-h-full w-max min-w-full p-2">
-          <SandpackFileExplorer
-            autoHiddenFiles={false}
-            style={{
-              minHeight: "100%",
-              width: "max-content",
-              minWidth: "100%",
-            }}
+        <div className="w-max min-w-full p-2">
+          <TreeNode
+            node={tree}
+            depth={0}
+            parentPath=""
+            collapsed={collapsed}
+            toggle={toggleFolder}
+            activeFile={sandpack.activeFile}
+            onOpen={(path) => sandpack.openFile(path)}
           />
         </div>
       </div>

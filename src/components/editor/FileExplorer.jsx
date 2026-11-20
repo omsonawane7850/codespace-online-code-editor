@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { FolderOpen, Upload, FolderUp, FileArchive } from "lucide-react";
 
@@ -17,11 +17,16 @@ import {
 const iconButtonClass =
   "relative cursor-pointer rounded p-1.5 text-(--muted) transition hover:bg-(--hover) hover:text-(--text)";
 
-// onImport(newFiles, "replace" | "merge") is handled by EditorPage
+// onImport(newFiles, "replace" | "merge") is handled by EditorPage.
+// It returns a message string if the import did not happen.
 function FileExplorer({ onImport }) {
   const statusTimerRef = useRef(null);
 
   const [importStatus, setImportStatus] = useState("");
+
+  useEffect(() => {
+    return () => clearTimeout(statusTimerRef.current);
+  }, []);
 
   function showStatus(message) {
     setImportStatus(message);
@@ -31,6 +36,12 @@ function FileExplorer({ onImport }) {
     statusTimerRef.current = setTimeout(() => {
       setImportStatus("");
     }, 5000);
+  }
+
+  function formatSuccess(importedCount, skippedCount) {
+    return skippedCount > 0
+      ? `${importedCount} imported, ${skippedCount} skipped`
+      : `${importedCount} file(s) imported`;
   }
 
   // Files / Folder import
@@ -69,6 +80,7 @@ function FileExplorer({ onImport }) {
           continue;
         }
 
+        // Drop the root folder name (myapp/src/App.js -> /src/App.js)
         const relativeParts =
           isFolderImport && parts[0] === folderRoot ? parts.slice(1) : parts;
 
@@ -79,14 +91,19 @@ function FileExplorer({ onImport }) {
         };
       }
 
-      if (Object.keys(newFiles).length === 0) {
+      const importedCount = Object.keys(newFiles).length;
+
+      if (importedCount === 0) {
         showStatus(`Nothing imported (${skippedCount} skipped)`);
         return;
       }
 
-      const error = onImport(newFiles, isFolderImport ? "replace" : "merge");
+      const error = await onImport(
+        newFiles,
+        isFolderImport ? "replace" : "merge",
+      );
 
-      if (error) showStatus(error);
+      showStatus(error || formatSuccess(importedCount, skippedCount));
     } catch (error) {
       console.error("File import failed:", error);
 
@@ -109,14 +126,16 @@ function FileExplorer({ onImport }) {
     try {
       const { files: newFiles, skipped } = await readZipFiles(zipFile);
 
-      if (Object.keys(newFiles).length === 0) {
+      const importedCount = Object.keys(newFiles).length;
+
+      if (importedCount === 0) {
         showStatus(`Nothing imported (${skipped} skipped)`);
         return;
       }
 
-      const error = onImport(newFiles, "replace");
+      const error = await onImport(newFiles, "replace");
 
-      if (error) showStatus(error);
+      showStatus(error || formatSuccess(importedCount, skipped));
     } catch (error) {
       console.error("ZIP import failed:", error);
 
@@ -126,6 +145,7 @@ function FileExplorer({ onImport }) {
     }
   }
 
+  // Allows selecting the same file/folder again
   function resetValue(event) {
     event.target.value = "";
   }
@@ -141,7 +161,7 @@ function FileExplorer({ onImport }) {
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Import Files */}
+          {/* Import Files (add only) */}
           <label title="Import Files" className={iconButtonClass}>
             <Upload size={15} />
 
@@ -154,8 +174,11 @@ function FileExplorer({ onImport }) {
             />
           </label>
 
-          {/* Import Folder */}
-          <label title="Import Folder" className={iconButtonClass}>
+          {/* Import Folder (replaces project) */}
+          <label
+            title="Import Folder (replaces project)"
+            className={iconButtonClass}
+          >
             <FolderUp size={15} />
 
             <input
@@ -169,8 +192,11 @@ function FileExplorer({ onImport }) {
             />
           </label>
 
-          {/* Import ZIP */}
-          <label title="Import ZIP" className={iconButtonClass}>
+          {/* Import ZIP (replaces project) */}
+          <label
+            title="Import ZIP (replaces project)"
+            className={iconButtonClass}
+          >
             <FileArchive size={15} />
 
             <input

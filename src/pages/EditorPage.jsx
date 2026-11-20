@@ -52,11 +52,19 @@ function EditorPage() {
   const projectFiles = currentProject?.files || initialFiles;
 
   // Import writes straight to project state, then remounts the workspace.
-  // Folder / ZIP ("replace") throws away every old file, including starter code.
-  // Returns an error message string, or nothing on success.
+  // Folder / ZIP ("replace") removes every old file, including starter code.
+  // Returns a message string if nothing was imported, or nothing on success.
   function handleImport(newFiles, mode) {
     if (!currentProject) {
       return "Open a project first (create one from the sidebar)";
+    }
+
+    if (mode === "replace") {
+      const confirmed = window.confirm(
+        "Importing will delete all current files in this project and replace them with the imported ones. Continue?",
+      );
+
+      if (!confirmed) return "Import cancelled";
     }
 
     const nextFiles =
